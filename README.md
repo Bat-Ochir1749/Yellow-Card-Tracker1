@@ -1,16 +1,58 @@
-# React + Vite
+# Yellow Card Tracker
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A web application to track student yellow cards and automatically issue demerits.
 
-Currently, two official plugins are available:
+## 🚀 Deployment to Vercel
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+To deploy this application successfully on Vercel, you must set up a PostgreSQL database and configure environment variables.
 
-## React Compiler
+### Step 1: Create a Database
+Since Vercel is serverless, you cannot use the local `dev.db` (SQLite) file. You need a cloud PostgreSQL database.
+Recommended free options:
+- **Neon** (https://neon.tech) - Easiest to set up.
+- **Supabase** (https://supabase.com)
+- **Vercel Postgres** (Available in Vercel Storage tab)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+**After creating the database, copy the "Connection String".**
+It looks like: `postgres://user:password@host.neondb.tech/neondb...`
 
-## Expanding the ESLint configuration
+### Step 2: Configure Vercel
+1. Go to your **Vercel Project Settings**.
+2. Navigate to **Environment Variables**.
+3. Add the following variables:
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+| Variable | Value |
+|----------|-------|
+| `DATABASE_URL` | Your PostgreSQL connection string (from Step 1) |
+| `SMTP_HOST` | `smtp.gmail.com` |
+| `SMTP_USER` | `yellowcardnotice@gmail.com` |
+| `SMTP_PASS` | `ytqp oxao bdml yryk` |
+| `SMTP_PORT` | `587` |
+| `SMTP_SECURE` | `false` |
+
+### Step 3: Redeploy
+After adding the variables, go to the **Deployments** tab in Vercel and **Redeploy** the latest commit.
+
+---
+
+## 💻 Local Development
+
+1. **Install Dependencies**
+   ```bash
+   npm install
+   ```
+
+2. **Setup Environment**
+   Create a `.env` file in the root directory (see `.env.example`).
+   ```env
+   DATABASE_URL="postgresql://..."
+   ```
+
+3. **Run Backend & Frontend**
+   ```bash
+   # Terminal 1: Backend
+   npm run api
+
+   # Terminal 2: Frontend
+   npm run dev
+   ```

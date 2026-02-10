@@ -6,6 +6,10 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+if (!process.env.DATABASE_URL) {
+    console.error("❌ FATAL: DATABASE_URL is missing. Please set this environment variable in Vercel.");
+}
+
 const app = express();
 const prisma = new PrismaClient();
 

@@ -40,20 +40,8 @@ export default function WeeklyReport({ isOpen, onClose }) {
             // Process logs to tally by student
             const tally = {};
             logs.forEach(log => {
-                // Only count "Yellow Card" related logs if needed, 
-                // but usually logs are created when YC is added or updated.
-                // Assuming all logs except "Reset" count as activity, 
-                // but the user specifically asked for "students who got yellow card".
-                // Based on previous code, logs are created for updates.
-                // We should filter for relevant descriptions if possible, 
-                // but for now we'll count all logs as "incidents" or check description.
-                
-                // Let's assume all logs in this period are relevant "events"
-                // Or better, we count distinct students.
-                
-                // Refined requirement: "tally of students who got yellow card"
-                // A student might get 2 YC in a week. Should count as 2 or 1 student?
-                // "tally of students" usually means list of students and their counts.
+                // Only count "Yellow Card" related logs (ignore resets or removals)
+                if (!log.description.startsWith('+1 YC')) return;
                 
                 if (!tally[log.studentId]) {
                     tally[log.studentId] = {
@@ -64,6 +52,9 @@ export default function WeeklyReport({ isOpen, onClose }) {
                     };
                 }
                 tally[log.studentId].count += 1;
+                // Clean up description for display (remove the +1 YC prefix if redundant, or keep it)
+                // log.description is like "+1 YC (Reason) -> Converted..."
+                // We'll keep the full description as it contains context
                 tally[log.studentId].reasons.push(log.description);
             });
 

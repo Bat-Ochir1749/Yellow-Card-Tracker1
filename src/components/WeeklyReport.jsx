@@ -39,10 +39,11 @@ export default function WeeklyReport({ isOpen, onClose }) {
             
             // Process logs to tally by student
             const tally = {};
-            logs.forEach(log => {
-                // Only count "Yellow Card" related logs (ignore resets or removals)
-                if (!log.description.startsWith('+1 YC')) return;
-                
+            
+            // Sort logs by date ascending (Oldest first) to replay history correctly
+            const sortedLogs = [...logs].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+
+            sortedLogs.forEach(log => {
                 if (!tally[log.studentId]) {
                     tally[log.studentId] = {
                         name: log.student.fullName,
@@ -51,14 +52,27 @@ export default function WeeklyReport({ isOpen, onClose }) {
                         reasons: []
                     };
                 }
-                tally[log.studentId].count += 1;
-                // Clean up description for display (remove the +1 YC prefix if redundant, or keep it)
-                // log.description is like "+1 YC (Reason) -> Converted..."
-                // We'll keep the full description as it contains context
-                tally[log.studentId].reasons.push(log.description);
+
+                if (log.description.startsWith('+1 YC')) {
+                    tally[log.studentId].count += 1;
+                    tally[log.studentId].reasons.push(log.description);
+                } else if (log.description.startsWith('Manual Reset')) {
+                    // Manual reset clears the tally for this week (up to this point)
+                    tally[log.studentId].count = 0;
+                    tally[log.studentId].reasons = []; // Optional: Clear reasons too? Or keep history?
+                    // User said "dont show it", implying the student shouldn't show up if reset.
+                    // Clearing count ensures they are filtered out later if count == 0.
+                } 
+                // We ignore other logs (like automatic resets or just updates) for the count,
+                // effectively treating them as neutral.
             });
 
-            setReportData(Object.values(tally).sort((a, b) => b.count - a.count));
+            // Filter out students with 0 count (e.g. they were reset)
+            const finalReport = Object.values(tally)
+                .filter(item => item.count > 0)
+                .sort((a, b) => b.count - a.count);
+
+            setReportData(finalReport);
         } catch (error) {
             console.error("Error fetching report:", error);
         } finally {

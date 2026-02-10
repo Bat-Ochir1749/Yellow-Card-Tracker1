@@ -125,7 +125,7 @@ function HistoryModal({ isOpen, onClose, studentName, logs }) {
     );
 }
 
-export default function StudentList({ students, onUpdate, onReset, onDelete }) {
+export default function StudentList({ students, onUpdate, onReset, onDelete, isViewOnly }) {
   const [loading, setLoading] = useState(null);
   const [ycModalOpen, setYcModalOpen] = useState(false);
   const [historyModalOpen, setHistoryModalOpen] = useState(false);
@@ -258,35 +258,39 @@ export default function StudentList({ students, onUpdate, onReset, onDelete }) {
                 >
                   History
                 </button>
-               <button
-                  onClick={() => handleDelete(student.id)}
-                  disabled={loading === student.id}
-                  className="mr-auto text-xs font-medium text-gray-400 hover:text-red-600 disabled:opacity-50 uppercase tracking-wider"
-                >
-                  Delete
-                </button>
+               {!isViewOnly && (
+                 <>
+                   <button
+                      onClick={() => handleDelete(student.id)}
+                      disabled={loading === student.id}
+                      className="mr-auto text-xs font-medium text-gray-400 hover:text-red-600 disabled:opacity-50 uppercase tracking-wider"
+                    >
+                      Delete
+                    </button>
 
-               <button
-                  onClick={() => handleReset(student.id)}
-                  disabled={loading === student.id}
-                  className="text-sm font-medium text-red-600 hover:text-red-900 disabled:opacity-50"
-                >
-                  Reset
-                </button>
-                <button
-                  onClick={() => handleAction(student.id, 'remove')}
-                  disabled={loading === student.id || student.yellowCards === 0}
-                  className="text-sm font-medium text-gray-600 hover:text-gray-900 disabled:opacity-50"
-                >
-                  -1 YC
-                </button>
-                <button
-                  onClick={() => openYCModal(student)}
-                  disabled={loading === student.id}
-                  className="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:opacity-50"
-                >
-                  +1 YC
-                </button>
+                   <button
+                      onClick={() => handleReset(student.id)}
+                      disabled={loading === student.id}
+                      className="text-sm font-medium text-red-600 hover:text-red-900 disabled:opacity-50"
+                    >
+                      Reset
+                    </button>
+                    <button
+                      onClick={() => handleAction(student.id, 'remove')}
+                      disabled={loading === student.id || student.yellowCards === 0}
+                      className="text-sm font-medium text-gray-600 hover:text-gray-900 disabled:opacity-50"
+                    >
+                      -1 YC
+                    </button>
+                    <button
+                      onClick={() => openYCModal(student)}
+                      disabled={loading === student.id}
+                      className="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:opacity-50"
+                    >
+                      +1 YC
+                    </button>
+                 </>
+               )}
             </div>
           </div>
         ))}
@@ -325,42 +329,50 @@ export default function StudentList({ students, onUpdate, onReset, onDelete }) {
                 </td>
                 <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{student.demerits}</td>
                 <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6 space-x-2">
-                  <button
-                    onClick={() => openYCModal(student)}
-                    disabled={loading === student.id}
-                    className="text-indigo-600 hover:text-indigo-900 disabled:opacity-50"
-                  >
-                    +1 YC
-                  </button>
-                  <button
-                    onClick={() => handleAction(student.id, 'remove')}
-                    disabled={loading === student.id || student.yellowCards === 0}
-                    className="text-gray-600 hover:text-gray-900 disabled:opacity-50"
-                  >
-                    -1 YC
-                  </button>
-                  <span className="text-gray-300">|</span>
-                  <button
-                    onClick={() => handleReset(student.id)}
-                    disabled={loading === student.id}
-                    className="text-orange-600 hover:text-orange-900 disabled:opacity-50"
-                  >
-                    Reset
-                  </button>
+                  {!isViewOnly && (
+                    <>
+                      <button
+                        onClick={() => openYCModal(student)}
+                        disabled={loading === student.id}
+                        className="text-indigo-600 hover:text-indigo-900 disabled:opacity-50"
+                      >
+                        +1 YC
+                      </button>
+                      <button
+                        onClick={() => handleAction(student.id, 'remove')}
+                        disabled={loading === student.id || student.yellowCards === 0}
+                        className="text-gray-600 hover:text-gray-900 disabled:opacity-50"
+                      >
+                        -1 YC
+                      </button>
+                      <span className="text-gray-300">|</span>
+                      <button
+                        onClick={() => handleReset(student.id)}
+                        disabled={loading === student.id}
+                        className="text-orange-600 hover:text-orange-900 disabled:opacity-50"
+                      >
+                        Reset
+                      </button>
+                    </>
+                  )}
                   <button
                     onClick={() => openHistoryModal(student)}
                     className="text-blue-600 hover:text-blue-900"
                   >
                     History
                   </button>
-                  <span className="text-gray-300">|</span>
-                  <button
-                    onClick={() => handleDelete(student.id)}
-                    disabled={loading === student.id}
-                    className="text-gray-400 hover:text-red-600 disabled:opacity-50 pl-2"
-                  >
-                    Delete
-                  </button>
+                  {!isViewOnly && (
+                    <>
+                      <span className="text-gray-300">|</span>
+                      <button
+                        onClick={() => handleDelete(student.id)}
+                        disabled={loading === student.id}
+                        className="text-gray-400 hover:text-red-600 disabled:opacity-50 pl-2"
+                      >
+                        Delete
+                      </button>
+                    </>
+                  )}
                 </td>
               </tr>
             ))}

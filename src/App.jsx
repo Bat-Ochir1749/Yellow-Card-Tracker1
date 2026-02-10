@@ -10,14 +10,17 @@ const API_URL = '/api';
 function App() {
   const [grade, setGrade] = useState(6)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [isViewOnly, setIsViewOnly] = useState(false)
   const [students, setStudents] = useState([])
   const [error, setError] = useState(null)
   const [showSettings, setShowSettings] = useState(false)
 
   useEffect(() => {
     const auth = localStorage.getItem('isAuthenticated')
+    const viewOnly = localStorage.getItem('isViewOnly')
     if (auth === 'true') {
       setIsAuthenticated(true)
+      setIsViewOnly(viewOnly === 'true')
     }
   }, [])
 
@@ -27,14 +30,18 @@ function App() {
     }
   }, [grade, isAuthenticated])
 
-  const handleLogin = () => {
+  const handleLogin = (viewOnly = false) => {
     localStorage.setItem('isAuthenticated', 'true')
+    localStorage.setItem('isViewOnly', viewOnly)
     setIsAuthenticated(true)
+    setIsViewOnly(viewOnly)
   }
 
   const handleLogout = () => {
     localStorage.removeItem('isAuthenticated')
+    localStorage.removeItem('isViewOnly')
     setIsAuthenticated(false)
+    setIsViewOnly(false)
   }
 
   const [isDemoMode, setIsDemoMode] = useState(false)
@@ -160,13 +167,15 @@ function App() {
             >
               Log Out
             </button>
-            <button
-              type="button"
-              onClick={() => setShowSettings(!showSettings)}
-              className="w-full sm:w-auto inline-flex items-center justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
-            >
-              {showSettings ? 'Hide Settings' : 'Manage Emails'}
-            </button>
+            {!isViewOnly && (
+              <button
+                type="button"
+                onClick={() => setShowSettings(!showSettings)}
+                className="w-full sm:w-auto inline-flex items-center justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+              >
+                {showSettings ? 'Hide Settings' : 'Manage Emails'}
+              </button>
+            )}
           </div>
         </div>
 
@@ -175,6 +184,11 @@ function App() {
               <label htmlFor="grade" className="block text-sm font-medium leading-6 text-gray-900 whitespace-nowrap">Select Grade:</label>
               <GradeSelector selected={grade} onChange={setGrade} />
            </div>
+           {isViewOnly && (
+             <div className="text-sm font-medium text-gray-500 bg-gray-200 px-3 py-1 rounded-full">
+               View Only Mode
+             </div>
+           )}
         </div>
 
         {isDemoMode && (
@@ -218,7 +232,7 @@ function App() {
           </div>
         )}
 
-        {showSettings && (
+        {showSettings && !isViewOnly && (
           <Settings grade={grade} />
         )}
 
@@ -228,13 +242,22 @@ function App() {
             onUpdate={updateStudent} 
             onReset={resetStudent} 
             onDelete={deleteStudent}
+            isViewOnly={isViewOnly}
           />
         </div>
 
-        <div className="mt-6 sm:mt-8 bg-white shadow sm:rounded-lg p-4 sm:p-6">
-           <h3 className="text-base font-semibold leading-6 text-gray-900">Add New Student</h3>
-           <AddStudent grade={grade} onAdd={addStudent} />
-        </div>
+        {!isViewOnly && (
+          <div className="mt-6 sm:mt-8 bg-white shadow sm:rounded-lg p-4 sm:p-6">
+             <h3 className="text-base font-semibold leading-6 text-gray-900">Add New Student</h3>
+             <AddStudent grade={grade} onAdd={addStudent} />
+          </div>
+        )}
+
+        <footer className="mt-12 py-6 border-t border-gray-200 text-center text-sm text-gray-500">
+          <p className="font-medium text-gray-900 mb-2">Main Developers</p>
+          <p>Bat-Ochir Odmandakh</p>
+          <p>Minjun Kim</p>
+        </footer>
       </div>
     </div>
   )

@@ -3,18 +3,33 @@ import cors from 'cors';
 import { PrismaClient } from '@prisma/client';
 import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
+import { mockDb } from './mockDb.js';
 
 dotenv.config();
 
-if (!process.env.DATABASE_URL) {
-    console.error("❌ FATAL: DATABASE_URL is missing. Please set this environment variable in Vercel.");
-}
-
 const app = express();
-const prisma = new PrismaClient();
+const hasDb = !!process.env.DATABASE_URL;
+
+let prisma;
+
+if (hasDb) {
+    prisma = new PrismaClient();
+    console.log("✅ Using Real Database (PostgreSQL)");
+} else {
+    console.error("⚠️ DATABASE_URL is missing. Using In-Memory Mock Database. DATA WILL BE LOST ON RESTART.");
+    prisma = mockDb;
+}
 
 app.use(cors());
 app.use(express.json());
+
+// Log usage mode
+app.use((req, res, next) => {
+    if (!hasDb) {
+        res.setHeader('X-Data-Source', 'Memory-Mock');
+    }
+    next();
+});
 
 const PORT = process.env.PORT || 3000;
 

@@ -39,18 +39,23 @@ let transporter;
 async function getTransporter() {
     if (transporter) return transporter;
 
-    if (process.env.SMTP_HOST && process.env.SMTP_USER) {
+    // Use provided credentials or fallback to hardcoded (User requested)
+    const host = process.env.SMTP_HOST || 'smtp.gmail.com';
+    const user = process.env.SMTP_USER || 'yellowcardnotice@gmail.com';
+    const pass = process.env.SMTP_PASS || 'ytqp oxao bdml yryk';
+
+    if (user && pass) {
         // Use provided credentials
         transporter = nodemailer.createTransport({
-            host: process.env.SMTP_HOST,
-            port: process.env.SMTP_PORT || 587,
-            secure: process.env.SMTP_SECURE === 'true', 
+            host: host,
+            port: 587,
+            secure: false, // true for 465, false for other ports
             auth: {
-                user: process.env.SMTP_USER,
-                pass: process.env.SMTP_PASS
+                user: user,
+                pass: pass
             }
         });
-        console.log("📧 Email system initialized with provided credentials.");
+        console.log(`📧 Email system initialized for ${user}`);
     } else {
         // Use Ethereal for testing
         try {
@@ -95,9 +100,11 @@ async function sendDemeritEmail(student, grade) {
         }
 
         console.log(`📧 Attempting to send email to: ${recipients.join(', ')}`);
+        
+        const sender = process.env.SMTP_USER || 'yellowcardnotice@gmail.com';
 
         const info = await mailTransport.sendMail({
-            from: `"Yellow Card Tracker" <${process.env.SMTP_USER || 'noreply@school.edu'}>`,
+            from: `"Yellow Card Tracker" <${sender}>`,
             to: recipients.join(', '),
             subject: 'Yellow Card Tracker Notice – Demerit Issued',
             text: `We would like to inform you that ${student.fullName} has gotten 3 yellow cards, which is equivalent to a demerit.`,

@@ -63,10 +63,11 @@ function App() {
         if (updated.emailResult.success) {
            if (updated.emailResult.previewUrl) {
              console.log('Email Preview:', updated.emailResult.previewUrl);
-             alert(`Demerit issued! Email sent (Test Mode).\nPreview: ${updated.emailResult.previewUrl}`);
+             // alert(`Demerit issued! Email sent (Test Mode).\nPreview: ${updated.emailResult.previewUrl}`);
              window.open(updated.emailResult.previewUrl, '_blank');
            } else {
-             alert('Demerit issued! Email notification sent successfully.');
+             console.log('Demerit issued! Email notification sent successfully.');
+             // alert('Demerit issued! Email notification sent successfully.');
            }
         } else {
            console.error('Email failed:', updated.emailResult.message);

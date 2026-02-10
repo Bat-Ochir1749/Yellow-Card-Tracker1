@@ -165,7 +165,7 @@ function App() {
               onClick={handleLogout}
               className="w-full sm:w-auto inline-flex items-center justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
             >
-              Log Out
+              {isViewOnly ? 'Back' : 'Log Out'}
             </button>
             {!isViewOnly && (
               <button
@@ -259,6 +259,7 @@ function App() {
           <p>Minjun Kim</p>
           <p className="font-medium text-gray-900 mt-4 mb-2">Supporting Developer</p>
           <p>Dennis Alimpolos</p>
+          <p className="mt-4 font-medium text-gray-900">SPAS Student Council 2025-2026</p>
         </footer>
       </div>
     </div>

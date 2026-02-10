@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import Login from './components/Login'
 import GradeSelector from './components/GradeSelector'
 import StudentList from './components/StudentList'
 import AddStudent from './components/AddStudent'
@@ -8,13 +9,28 @@ const API_URL = '/api';
 
 function App() {
   const [grade, setGrade] = useState(6)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [students, setStudents] = useState([])
   const [error, setError] = useState(null)
   const [showSettings, setShowSettings] = useState(false)
 
   useEffect(() => {
+    const auth = localStorage.getItem('isAuthenticated')
+    if (auth === 'true') {
+      setIsAuthenticated(true)
+    }
     fetchStudents();
   }, [grade])
+
+  const handleLogin = () => {
+    localStorage.setItem('isAuthenticated', 'true')
+    setIsAuthenticated(true)
+  }
+
+  const handleLogout = () => {
+    localStorage.removeItem('isAuthenticated')
+    setIsAuthenticated(false)
+  }
 
   const [isDemoMode, setIsDemoMode] = useState(false)
 
@@ -118,6 +134,10 @@ function App() {
     }
   }
 
+  if (!isAuthenticated) {
+    return <Login onLogin={handleLogin} />
+  }
+
   return (
     <div className="min-h-screen bg-gray-100 py-4 sm:py-8">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -127,7 +147,14 @@ function App() {
               Yellow Card Tracker
             </h2>
           </div>
-          <div className="flex md:ml-4">
+          <div className="flex md:ml-4 gap-2">
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="w-full sm:w-auto inline-flex items-center justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+            >
+              Log Out
+            </button>
             <button
               type="button"
               onClick={() => setShowSettings(!showSettings)}

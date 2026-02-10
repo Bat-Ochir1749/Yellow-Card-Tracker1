@@ -8,7 +8,7 @@ import { mockDb } from './mockDb.js';
 dotenv.config();
 
 const app = express();
-const hasDb = !!process.env.DATABASE_URL;
+const hasDb = !!process.env.POSTGRES_PRISMA_URL || !!process.env.DATABASE_URL;
 
 let prisma;
 
@@ -19,14 +19,22 @@ if (hasDb) {
     // Seed default emails if missing (Requested by User)
     (async () => {
         try {
+            // Wait a moment for connection
+            await new Promise(r => setTimeout(r, 1000));
+            
             const DEFAULT_EMAILS = JSON.stringify(['josi@stpaulclark.com', 'alyannac@stpaulclark.com']);
             for (let g = 1; g <= 12; g++) {
-                const exists = await prisma.gradeSettings.findUnique({ where: { grade: g } });
-                if (!exists) {
-                    await prisma.gradeSettings.create({
-                        data: { grade: g, emails: DEFAULT_EMAILS }
-                    });
-                    console.log(`Initialized default emails for Grade ${g}`);
+                // Use explicit try-catch inside loop to prevent one failure from stopping all
+                try {
+                    const exists = await prisma.gradeSettings.findUnique({ where: { grade: g } });
+                    if (!exists) {
+                        await prisma.gradeSettings.create({
+                            data: { grade: g, emails: DEFAULT_EMAILS }
+                        });
+                        console.log(`Initialized default emails for Grade ${g}`);
+                    }
+                } catch (e) {
+                    // Ignore table not found errors during initial migration phase
                 }
             }
         } catch (err) {
@@ -34,7 +42,7 @@ if (hasDb) {
         }
     })();
 } else {
-    console.error("⚠️ DATABASE_URL is missing. Using In-Memory Mock Database. DATA WILL BE LOST ON RESTART.");
+    console.error("⚠️ DATABASE_URL or POSTGRES_PRISMA_URL is missing. Using In-Memory Mock Database. DATA WILL BE LOST ON RESTART.");
     prisma = mockDb;
 }
 

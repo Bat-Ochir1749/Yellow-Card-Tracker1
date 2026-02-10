@@ -4,7 +4,7 @@ import StudentList from './components/StudentList'
 import AddStudent from './components/AddStudent'
 import Settings from './components/Settings'
 
-const API_URL = 'http://localhost:3000';
+const API_URL = '/api';
 
 function App() {
   const [grade, setGrade] = useState(6)

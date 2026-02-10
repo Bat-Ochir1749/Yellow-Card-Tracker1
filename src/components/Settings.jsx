@@ -4,7 +4,7 @@ export default function Settings({ grade }) {
   const [emails, setEmails] = useState([]);
   const [newEmail, setNewEmail] = useState('');
   const [loading, setLoading] = useState(false);
-  const API_URL = 'http://localhost:3000';
+  const API_URL = '/api';
 
   useEffect(() => {
     fetchEmails();

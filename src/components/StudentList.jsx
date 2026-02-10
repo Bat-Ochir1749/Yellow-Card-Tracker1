@@ -147,7 +147,7 @@ export default function StudentList({ students, onUpdate, onReset, onDelete }) {
       setHistoryModalOpen(true);
       setStudentLogs([]); // Clear previous
       try {
-          const res = await fetch(`http://localhost:3000/students/${student.id}/logs`);
+          const res = await fetch(`/api/students/${student.id}/logs`);
           const data = await res.json();
           setStudentLogs(data);
       } catch (error) {

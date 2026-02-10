@@ -1,8 +1,8 @@
-const express = require('express');
-const cors = require('cors');
-const { PrismaClient } = require('@prisma/client');
-const nodemailer = require('nodemailer');
-const dotenv = require('dotenv');
+import express from 'express';
+import cors from 'cors';
+import { PrismaClient } from '@prisma/client';
+import nodemailer from 'nodemailer';
+import dotenv from 'dotenv';
 
 dotenv.config();
 
@@ -97,10 +97,11 @@ async function sendDemeritEmail(student, grade) {
     }
 }
 
-// Routes
+// Router to handle /api prefix
+const router = express.Router();
 
 // Get Students by Grade
-app.get('/students', async (req, res) => {
+router.get('/students', async (req, res) => {
     const grade = parseInt(req.query.grade);
     if (!grade) return res.status(400).json({ error: 'Grade is required' });
 
@@ -116,7 +117,7 @@ app.get('/students', async (req, res) => {
 });
 
 // Add Student
-app.post('/students', async (req, res) => {
+router.post('/students', async (req, res) => {
     const { fullName, grade } = req.body;
     if (!fullName || !grade) return res.status(400).json({ error: 'Name and Grade required' });
 
@@ -131,7 +132,7 @@ app.post('/students', async (req, res) => {
 });
 
 // Add Yellow Card (The Core Logic)
-app.post('/students/:id/yellow-card', async (req, res) => {
+router.post('/students/:id/yellow-card', async (req, res) => {
     const { id } = req.params;
     const action = req.body.action || 'add'; // 'add' or 'remove'
     const { reason, customReason } = req.body;
@@ -196,7 +197,7 @@ app.post('/students/:id/yellow-card', async (req, res) => {
 });
 
 // Get Student Logs
-app.get('/students/:id/logs', async (req, res) => {
+router.get('/students/:id/logs', async (req, res) => {
     const { id } = req.params;
     try {
         const logs = await prisma.log.findMany({
@@ -210,7 +211,7 @@ app.get('/students/:id/logs', async (req, res) => {
 });
 
 // Reset Student
-app.post('/students/:id/reset', async (req, res) => {
+router.post('/students/:id/reset', async (req, res) => {
     const { id } = req.params;
     try {
         const updatedStudent = await prisma.student.update({
@@ -232,7 +233,7 @@ app.post('/students/:id/reset', async (req, res) => {
 });
 
 // Delete Student
-app.delete('/students/:id', async (req, res) => {
+router.delete('/students/:id', async (req, res) => {
     const { id } = req.params;
     try {
         const studentId = parseInt(id);
@@ -254,7 +255,7 @@ app.delete('/students/:id', async (req, res) => {
 });
 
 // Get Settings (Emails)
-app.get('/settings/:grade', async (req, res) => {
+router.get('/settings/:grade', async (req, res) => {
     const grade = parseInt(req.params.grade);
     try {
         const settings = await prisma.gradeSettings.findUnique({ where: { grade } });
@@ -265,7 +266,7 @@ app.get('/settings/:grade', async (req, res) => {
 });
 
 // Add Email
-app.post('/settings/:grade/emails', async (req, res) => {
+router.post('/settings/:grade/emails', async (req, res) => {
     const grade = parseInt(req.params.grade);
     const { email } = req.body;
     
@@ -293,7 +294,7 @@ app.post('/settings/:grade/emails', async (req, res) => {
 });
 
 // Remove Email
-app.delete('/settings/:grade/emails', async (req, res) => {
+router.delete('/settings/:grade/emails', async (req, res) => {
     const grade = parseInt(req.params.grade);
     const { email } = req.body;
 
@@ -315,7 +316,14 @@ app.delete('/settings/:grade/emails', async (req, res) => {
     }
 });
 
+// Mount router on /api
+app.use('/api', router);
 
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-});
+// Only listen if running locally (not in Vercel)
+if (process.env.VERCEL !== '1') {
+    app.listen(PORT, () => {
+        console.log(`Server running on port ${PORT}`);
+    });
+}
+
+export default app;

@@ -1,9 +1,12 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -15,12 +18,13 @@ model Student {
   demerits    Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  logs        Log[]
 }
 
 model GradeSettings {
-  id        Int      @id @default(autoincrement())
-  grade     Int      @unique
-  emails    String   // Stored as JSON string of string[]
+  id     Int    @id @default(autoincrement())
+  grade  Int    @unique
+  emails String // JSON string of email recipients
 }
 
 model Log {
@@ -28,4 +32,5 @@ model Log {
   studentId   Int
   description String
   createdAt   DateTime @default(now())
+  student     Student  @relation(fields: [studentId], references: [id])
 }

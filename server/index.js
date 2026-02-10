@@ -1,0 +1,321 @@
+const express = require('express');
+const cors = require('cors');
+const { PrismaClient } = require('@prisma/client');
+const nodemailer = require('nodemailer');
+const dotenv = require('dotenv');
+
+dotenv.config();
+
+const app = express();
+const prisma = new PrismaClient();
+
+app.use(cors());
+app.use(express.json());
+
+const PORT = process.env.PORT || 3000;
+
+// Email setup
+let transporter;
+
+async function initEmail() {
+    if (process.env.SMTP_HOST && process.env.SMTP_USER) {
+        // Use provided credentials
+        transporter = nodemailer.createTransport({
+            host: process.env.SMTP_HOST,
+            port: process.env.SMTP_PORT || 587,
+            secure: process.env.SMTP_SECURE === 'true', 
+            auth: {
+                user: process.env.SMTP_USER,
+                pass: process.env.SMTP_PASS
+            }
+        });
+        console.log("📧 Email system initialized with provided credentials.");
+    } else {
+        // Use Ethereal for testing
+        try {
+            const testAccount = await nodemailer.createTestAccount();
+            transporter = nodemailer.createTransport({
+                host: "smtp.ethereal.email",
+                port: 587,
+                secure: false, 
+                auth: {
+                    user: testAccount.user,
+                    pass: testAccount.pass,
+                },
+            });
+            console.log("📧 Email system initialized with Ethereal Test Account.");
+            console.log(`   User: ${testAccount.user}`);
+            console.log(`   Pass: ${testAccount.pass}`);
+        } catch (err) {
+            console.error("❌ Failed to create Ethereal test account:", err);
+        }
+    }
+}
+
+initEmail();
+
+// Helper to send email
+async function sendDemeritEmail(student, grade) {
+    if (!transporter) {
+        console.error("❌ Email transporter not initialized. Cannot send email.");
+        return;
+    }
+
+    try {
+        const settings = await prisma.gradeSettings.findUnique({
+            where: { grade: grade }
+        });
+
+        if (!settings || !settings.emails) {
+            console.log(`⚠️ No email recipients configured for Grade ${grade}`);
+            return;
+        }
+
+        const recipients = JSON.parse(settings.emails);
+        if (recipients.length === 0) {
+            console.log(`⚠️ No email recipients found in list for Grade ${grade}`);
+            return;
+        }
+
+        console.log(`📧 Attempting to send email to: ${recipients.join(', ')}`);
+
+        const info = await transporter.sendMail({
+            from: '"Yellow Card Tracker" <noreply@school.edu>',
+            to: recipients.join(', '),
+            subject: 'Yellow Card Tracker Notice – Demerit Issued',
+            text: `We would like to inform you that ${student.fullName} has gotten 3 yellow cards, which is equivalent to a demerit.`,
+            html: `<p>We would like to inform you that <strong>${student.fullName}</strong> has gotten <strong>3 yellow cards</strong>, which is equivalent to a <strong>demerit</strong>.</p>`
+        });
+
+        console.log("✅ Message sent: %s", info.messageId);
+        // If using ethereal, log the preview URL
+        if (nodemailer.getTestMessageUrl(info)) {
+            console.log("🔗 Preview URL: %s", nodemailer.getTestMessageUrl(info));
+        }
+    } catch (error) {
+        console.error("❌ Error sending email:", error);
+    }
+}
+
+// Routes
+
+// Get Students by Grade
+app.get('/students', async (req, res) => {
+    const grade = parseInt(req.query.grade);
+    if (!grade) return res.status(400).json({ error: 'Grade is required' });
+
+    try {
+        const students = await prisma.student.findMany({
+            where: { grade },
+            orderBy: { fullName: 'asc' }
+        });
+        res.json(students);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Add Student
+app.post('/students', async (req, res) => {
+    const { fullName, grade } = req.body;
+    if (!fullName || !grade) return res.status(400).json({ error: 'Name and Grade required' });
+
+    try {
+        const student = await prisma.student.create({
+            data: { fullName, grade: parseInt(grade) }
+        });
+        res.json(student);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Add Yellow Card (The Core Logic)
+app.post('/students/:id/yellow-card', async (req, res) => {
+    const { id } = req.params;
+    const action = req.body.action || 'add'; // 'add' or 'remove'
+    const { reason, customReason } = req.body;
+
+    try {
+        const student = await prisma.student.findUnique({ where: { id: parseInt(id) } });
+        if (!student) return res.status(404).json({ error: 'Student not found' });
+
+        let { yellowCards, demerits } = student;
+        let logMessage = '';
+
+        if (action === 'add') {
+            yellowCards += 1;
+            
+            const reasonText = customReason ? `${reason}: ${customReason}` : reason || 'Unknown';
+            logMessage = `+1 YC (${reasonText})`;
+
+            // Check rule: 3 Yellow Cards = 1 Demerit
+            if (yellowCards >= 3) {
+                demerits += 1;
+                yellowCards -= 3; // Subtract 3 so carry over works (e.g. 4 -> 1 YC, +1 Demerit)
+                logMessage += ' -> Converted to Demerit';
+                
+                // Trigger Email
+                sendDemeritEmail(student, student.grade);
+
+                // Check rule: 3 Demerits = Reset
+                if (demerits >= 3) {
+                    demerits = 0;
+                    yellowCards = 0;
+                    logMessage += ' -> Reset (3 Demerits)';
+                }
+            }
+        } else if (action === 'remove') {
+            if (yellowCards > 0) {
+                yellowCards -= 1;
+                logMessage = '-1 YC';
+            } else {
+                return res.json(student); // No change
+            }
+        }
+
+        const updatedStudent = await prisma.student.update({
+            where: { id: parseInt(id) },
+            data: { yellowCards, demerits }
+        });
+
+        // Log it with snapshot of state
+        if (logMessage) {
+            await prisma.log.create({
+                data: {
+                    studentId: student.id,
+                    description: `${logMessage} [Current: ${updatedStudent.yellowCards} YC, ${updatedStudent.demerits} D]`
+                }
+            });
+        }
+
+        res.json(updatedStudent);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Get Student Logs
+app.get('/students/:id/logs', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const logs = await prisma.log.findMany({
+            where: { studentId: parseInt(id) },
+            orderBy: { createdAt: 'desc' }
+        });
+        res.json(logs);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Reset Student
+app.post('/students/:id/reset', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const updatedStudent = await prisma.student.update({
+            where: { id: parseInt(id) },
+            data: { yellowCards: 0, demerits: 0 }
+        });
+        
+        await prisma.log.create({
+            data: {
+                studentId: parseInt(id),
+                description: 'Manual Reset [Current: 0 YC, 0 D]'
+            }
+        });
+
+        res.json(updatedStudent);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Delete Student
+app.delete('/students/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const studentId = parseInt(id);
+        
+        // Delete logs first (optional but good practice)
+        await prisma.log.deleteMany({
+            where: { studentId: studentId }
+        });
+
+        // Delete student
+        await prisma.student.delete({
+            where: { id: studentId }
+        });
+
+        res.json({ message: 'Student deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Get Settings (Emails)
+app.get('/settings/:grade', async (req, res) => {
+    const grade = parseInt(req.params.grade);
+    try {
+        const settings = await prisma.gradeSettings.findUnique({ where: { grade } });
+        res.json(settings ? JSON.parse(settings.emails) : []);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Add Email
+app.post('/settings/:grade/emails', async (req, res) => {
+    const grade = parseInt(req.params.grade);
+    const { email } = req.body;
+    
+    try {
+        let settings = await prisma.gradeSettings.findUnique({ where: { grade } });
+        let emails = settings ? JSON.parse(settings.emails) : [];
+        
+        if (!emails.includes(email)) {
+            emails.push(email);
+            if (settings) {
+                await prisma.gradeSettings.update({
+                    where: { grade },
+                    data: { emails: JSON.stringify(emails) }
+                });
+            } else {
+                await prisma.gradeSettings.create({
+                    data: { grade, emails: JSON.stringify(emails) }
+                });
+            }
+        }
+        res.json(emails);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Remove Email
+app.delete('/settings/:grade/emails', async (req, res) => {
+    const grade = parseInt(req.params.grade);
+    const { email } = req.body;
+
+    try {
+        let settings = await prisma.gradeSettings.findUnique({ where: { grade } });
+        if (settings) {
+            let emails = JSON.parse(settings.emails);
+            emails = emails.filter(e => e !== email);
+            await prisma.gradeSettings.update({
+                where: { grade },
+                data: { emails: JSON.stringify(emails) }
+            });
+            res.json(emails);
+        } else {
+            res.json([]);
+        }
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+});

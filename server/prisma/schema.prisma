@@ -1,0 +1,31 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Student {
+  id          Int      @id @default(autoincrement())
+  fullName    String
+  grade       Int
+  yellowCards Int      @default(0)
+  demerits    Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model GradeSettings {
+  id        Int      @id @default(autoincrement())
+  grade     Int      @unique
+  emails    String   // Stored as JSON string of string[]
+}
+
+model Log {
+  id          Int      @id @default(autoincrement())
+  studentId   Int
+  description String
+  createdAt   DateTime @default(now())
+}

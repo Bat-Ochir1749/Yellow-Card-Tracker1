@@ -111,6 +111,20 @@ export const mockDb = {
     findUnique: async (args) => {
       return store.settings.find(s => s.grade === args.where.grade) || null;
     },
+    create: async (args) => {
+        const newSetting = { ...args.data };
+        store.settings.push(newSetting);
+        return newSetting;
+    },
+    update: async (args) => {
+        const index = store.settings.findIndex(s => s.grade === args.where.grade);
+        if (index !== -1) {
+            const updated = { ...store.settings[index], ...args.data };
+            store.settings[index] = updated;
+            return updated;
+        }
+        throw new Error("Settings not found");
+    },
     upsert: async (args) => {
       const index = store.settings.findIndex(s => s.grade === args.where.grade);
       if (index !== -1) {

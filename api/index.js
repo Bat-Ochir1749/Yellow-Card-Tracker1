@@ -36,7 +36,9 @@ const PORT = process.env.PORT || 3000;
 // Email setup
 let transporter;
 
-async function initEmail() {
+async function getTransporter() {
+    if (transporter) return transporter;
+
     if (process.env.SMTP_HOST && process.env.SMTP_USER) {
         // Use provided credentials
         transporter = nodemailer.createTransport({
@@ -63,19 +65,18 @@ async function initEmail() {
                 },
             });
             console.log("📧 Email system initialized with Ethereal Test Account.");
-            console.log(`   User: ${testAccount.user}`);
-            console.log(`   Pass: ${testAccount.pass}`);
         } catch (err) {
             console.error("❌ Failed to create Ethereal test account:", err);
         }
     }
+    return transporter;
 }
-
-initEmail();
 
 // Helper to send email
 async function sendDemeritEmail(student, grade) {
-    if (!transporter) {
+    const mailTransport = await getTransporter();
+    
+    if (!mailTransport) {
         console.error("❌ Email transporter not initialized. Cannot send email.");
         return;
     }
@@ -98,7 +99,7 @@ async function sendDemeritEmail(student, grade) {
 
         console.log(`📧 Attempting to send email to: ${recipients.join(', ')}`);
 
-        const info = await transporter.sendMail({
+        const info = await mailTransport.sendMail({
             from: '"Yellow Card Tracker" <noreply@school.edu>',
             to: recipients.join(', '),
             subject: 'Yellow Card Tracker Notice – Demerit Issued',
@@ -176,7 +177,7 @@ router.post('/students/:id/yellow-card', async (req, res) => {
                 logMessage += ' -> Converted to Demerit';
                 
                 // Trigger Email
-                sendDemeritEmail(student, student.grade);
+                await sendDemeritEmail(student, student.grade);
 
                 // Check rule: 3 Demerits = Reset
                 if (demerits >= 3) {

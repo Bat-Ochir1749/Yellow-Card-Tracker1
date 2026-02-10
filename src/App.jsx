@@ -16,69 +16,150 @@ function App() {
     fetchStudents();
   }, [grade])
 
+  const [isDemoMode, setIsDemoMode] = useState(false)
+
   const fetchStudents = async () => {
-    setError(null);
     try {
+      // 1. Try to load from LocalStorage first (for persistence in Demo Mode)
+      const localKey = `students_grade_${grade}`;
+      const savedData = localStorage.getItem(localKey);
+      
       const res = await fetch(`${API_URL}/students?grade=${grade}`)
-      const data = await res.json()
-      if (Array.isArray(data)) {
-        setStudents(data)
+      
+      // Check if backend is in Mock Mode
+      const isMock = res.headers.get('X-Data-Source') === 'Memory-Mock';
+      setIsDemoMode(isMock);
+
+      if (isMock && savedData) {
+         // If we are in demo mode and have saved data, use the saved data
+         console.log('Using LocalStorage data for Demo Mode persistence');
+         setStudents(JSON.parse(savedData));
       } else {
-        console.error('Invalid data format:', data)
-        setError(data.error || 'Failed to fetch students. Please check your connection or database configuration.')
-        setStudents([])
+         // Otherwise use API data (Real DB or first-time Mock)
+         const data = await res.json()
+         setStudents(data)
+         // Save to local just in case we switch to demo mode later
+         if (isMock) {
+            localStorage.setItem(localKey, JSON.stringify(data));
+         }
       }
     } catch (error) {
       console.error('Error fetching students:', error)
-      setError('Network error: ' + error.message)
-      setStudents([])
+      // Fallback to local storage if API fails
+      const savedData = localStorage.getItem(`students_grade_${grade}`);
+      if (savedData) setStudents(JSON.parse(savedData));
     }
   }
 
   const addStudent = async (name) => {
-    try {
-      const res = await fetch(`${API_URL}/students`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fullName: name, grade })
-      })
-      const newStudent = await res.json()
-      setStudents([...students, newStudent].sort((a,b) => a.fullName.localeCompare(b.fullName)))
-    } catch (error) {
-      console.error('Error adding student:', error)
+    if (isDemoMode) {
+        // Client-Side Logic
+        const newStudent = { 
+            id: Date.now(), // Temporary ID
+            fullName: name, 
+            grade: grade, 
+            yellowCards: 0, 
+            demerits: 0 
+        };
+        const updatedList = [...students, newStudent];
+        updatedList.sort((a, b) => a.fullName.localeCompare(b.fullName));
+        setStudents(updatedList);
+        localStorage.setItem(`students_grade_${grade}`, JSON.stringify(updatedList));
+    } else {
+        // Server-Side Logic
+        try {
+          const res = await fetch(`${API_URL}/students`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fullName: name, grade })
+          })
+          const newStudent = await res.json()
+          setStudents([...students, newStudent].sort((a, b) => a.fullName.localeCompare(b.fullName)))
+        } catch (error) {
+          console.error('Error adding student:', error)
+        }
     }
   }
 
   const updateStudent = async (id, action, reason = null, customReason = null) => {
-    try {
-      const res = await fetch(`${API_URL}/students/${id}/yellow-card`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, reason, customReason })
-      })
-      const updated = await res.json()
-      
-      // Handle email notification result
-      if (updated.emailResult) {
-        if (updated.emailResult.success) {
-           if (updated.emailResult.previewUrl) {
-             console.log('Email Preview:', updated.emailResult.previewUrl);
-             // alert(`Demerit issued! Email sent (Test Mode).\nPreview: ${updated.emailResult.previewUrl}`);
-             window.open(updated.emailResult.previewUrl, '_blank');
-           } else {
-             console.log('Demerit issued! Email notification sent successfully.');
-             // alert('Demerit issued! Email notification sent successfully.');
-           }
-        } else {
-           console.error('Email failed:', updated.emailResult.message);
-           alert(`Demerit issued, BUT email failed to send.\nReason: ${updated.emailResult.message}`);
-        }
-      }
+    if (isDemoMode) {
+        // Client-Side Logic for Demo Mode
+        let updatedList = students.map(student => {
+            if (student.id !== id) return student;
 
-      setStudents(students.map(s => s.id === id ? updated : s))
-    } catch (error) {
-      console.error('Error updating student:', error)
-      alert('Failed to update student');
+            // Clone student to avoid direct mutation
+            let s = { ...student };
+            let emailTriggered = false;
+
+            if (action === 'add') {
+                s.yellowCards += 1;
+                if (s.yellowCards >= 3) {
+                    s.demerits += 1;
+                    s.yellowCards -= 3;
+                    emailTriggered = true; // Flag to send email
+                    
+                    if (s.demerits >= 3) {
+                        s.demerits = 0;
+                        s.yellowCards = 0;
+                    }
+                }
+            } else if (action === 'remove') {
+                if (s.yellowCards > 0) s.yellowCards -= 1;
+            }
+            
+            // Send email if needed (call special endpoint)
+            if (emailTriggered) {
+                fetch(`${API_URL}/send-notification`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ studentName: s.fullName, grade: s.grade })
+                }).then(res => res.json()).then(res => {
+                    if (!res.success) {
+                        alert(`Email failed: ${res.message}`);
+                    } else if (res.previewUrl) {
+                        window.open(res.previewUrl, '_blank');
+                    } else {
+                        console.log('Email sent successfully');
+                    }
+                });
+            }
+
+            return s;
+        });
+        
+        setStudents(updatedList);
+        localStorage.setItem(`students_grade_${grade}`, JSON.stringify(updatedList));
+
+    } else {
+        // Server-Side Logic (Original)
+        try {
+          const res = await fetch(`${API_URL}/students/${id}/yellow-card`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action, reason, customReason })
+          })
+          const updated = await res.json()
+          
+          // Handle email notification result
+          if (updated.emailResult) {
+            if (updated.emailResult.success) {
+               if (updated.emailResult.previewUrl) {
+                 console.log('Email Preview:', updated.emailResult.previewUrl);
+                 window.open(updated.emailResult.previewUrl, '_blank');
+               } else {
+                 console.log('Demerit issued! Email notification sent successfully.');
+               }
+            } else {
+               console.error('Email failed:', updated.emailResult.message);
+               alert(`Demerit issued, BUT email failed to send.\nReason: ${updated.emailResult.message}`);
+            }
+          }
+    
+          setStudents(students.map(s => s.id === id ? updated : s))
+        } catch (error) {
+          console.error('Error updating student:', error)
+          alert('Failed to update student');
+        }
     }
   }
 
@@ -95,14 +176,18 @@ function App() {
   }
 
   const deleteStudent = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this student?')) return;
-    try {
-      await fetch(`${API_URL}/students/${id}`, {
-        method: 'DELETE'
-      })
-      setStudents(students.filter(s => s.id !== id))
-    } catch (error) {
-      console.error('Error deleting student:', error)
+    if (isDemoMode) {
+        const updatedList = students.filter(s => s.id !== id);
+        setStudents(updatedList);
+        localStorage.setItem(`students_grade_${grade}`, JSON.stringify(updatedList));
+    } else {
+        if (!window.confirm('Are you sure you want to delete this student?')) return
+        try {
+          await fetch(`${API_URL}/students/${id}`, { method: 'DELETE' })
+          setStudents(students.filter(s => s.id !== id))
+        } catch (error) {
+          console.error('Error deleting student:', error)
+        }
     }
   }
 

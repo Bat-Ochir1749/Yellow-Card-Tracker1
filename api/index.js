@@ -326,6 +326,17 @@ router.post('/settings/:grade/emails', async (req, res) => {
     }
 });
 
+// Manual Notification Trigger (For Client-Side / Demo Mode)
+router.post('/send-notification', async (req, res) => {
+    const { studentName, grade } = req.body;
+    
+    // Construct a fake student object for the email helper
+    const student = { fullName: studentName };
+    
+    const result = await sendDemeritEmail(student, parseInt(grade));
+    res.json(result || { success: false, message: "Unknown error" });
+});
+
 // Remove Email
 router.delete('/settings/:grade/emails', async (req, res) => {
     const grade = parseInt(req.params.grade);

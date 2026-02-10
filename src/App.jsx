@@ -57,9 +57,27 @@ function App() {
         body: JSON.stringify({ action, reason, customReason })
       })
       const updated = await res.json()
+      
+      // Handle email notification result
+      if (updated.emailResult) {
+        if (updated.emailResult.success) {
+           if (updated.emailResult.previewUrl) {
+             console.log('Email Preview:', updated.emailResult.previewUrl);
+             alert(`Demerit issued! Email sent (Test Mode).\nPreview: ${updated.emailResult.previewUrl}`);
+             window.open(updated.emailResult.previewUrl, '_blank');
+           } else {
+             alert('Demerit issued! Email notification sent successfully.');
+           }
+        } else {
+           console.error('Email failed:', updated.emailResult.message);
+           alert(`Demerit issued, BUT email failed to send.\nReason: ${updated.emailResult.message}`);
+        }
+      }
+
       setStudents(students.map(s => s.id === id ? updated : s))
     } catch (error) {
       console.error('Error updating student:', error)
+      alert('Failed to update student');
     }
   }
 

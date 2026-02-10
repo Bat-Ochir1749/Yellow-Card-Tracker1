@@ -77,8 +77,7 @@ async function sendDemeritEmail(student, grade) {
     const mailTransport = await getTransporter();
     
     if (!mailTransport) {
-        console.error("❌ Email transporter not initialized. Cannot send email.");
-        return;
+        return { success: false, message: "Email system not initialized" };
     }
 
     try {
@@ -87,14 +86,12 @@ async function sendDemeritEmail(student, grade) {
         });
 
         if (!settings || !settings.emails) {
-            console.log(`⚠️ No email recipients configured for Grade ${grade}`);
-            return;
+            return { success: false, message: `No email recipients configured for Grade ${grade}` };
         }
 
         const recipients = JSON.parse(settings.emails);
         if (recipients.length === 0) {
-            console.log(`⚠️ No email recipients found in list for Grade ${grade}`);
-            return;
+            return { success: false, message: `No email recipients found for Grade ${grade}` };
         }
 
         console.log(`📧 Attempting to send email to: ${recipients.join(', ')}`);
@@ -108,12 +105,19 @@ async function sendDemeritEmail(student, grade) {
         });
 
         console.log("✅ Message sent: %s", info.messageId);
+        
+        let previewUrl = null;
         // If using ethereal, log the preview URL
         if (nodemailer.getTestMessageUrl(info)) {
-            console.log("🔗 Preview URL: %s", nodemailer.getTestMessageUrl(info));
+            previewUrl = nodemailer.getTestMessageUrl(info);
+            console.log("🔗 Preview URL: %s", previewUrl);
         }
+
+        return { success: true, message: "Email sent successfully", previewUrl };
+
     } catch (error) {
         console.error("❌ Error sending email:", error);
+        return { success: false, message: error.message };
     }
 }
 
@@ -164,6 +168,8 @@ router.post('/students/:id/yellow-card', async (req, res) => {
         let { yellowCards, demerits } = student;
         let logMessage = '';
 
+        let emailResult = null;
+
         if (action === 'add') {
             yellowCards += 1;
             
@@ -177,7 +183,7 @@ router.post('/students/:id/yellow-card', async (req, res) => {
                 logMessage += ' -> Converted to Demerit';
                 
                 // Trigger Email
-                await sendDemeritEmail(student, student.grade);
+                emailResult = await sendDemeritEmail(student, student.grade);
 
                 // Check rule: 3 Demerits = Reset
                 if (demerits >= 3) {
@@ -210,7 +216,7 @@ router.post('/students/:id/yellow-card', async (req, res) => {
             });
         }
 
-        res.json(updatedStudent);
+        res.json({ ...updatedStudent, emailResult });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }

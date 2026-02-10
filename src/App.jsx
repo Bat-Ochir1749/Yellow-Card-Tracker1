@@ -19,8 +19,13 @@ function App() {
     if (auth === 'true') {
       setIsAuthenticated(true)
     }
-    fetchStudents();
-  }, [grade])
+  }, [])
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchStudents();
+    }
+  }, [grade, isAuthenticated])
 
   const handleLogin = () => {
     localStorage.setItem('isAuthenticated', 'true')

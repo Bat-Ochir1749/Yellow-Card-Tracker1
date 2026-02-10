@@ -97,7 +97,7 @@ async function sendDemeritEmail(student, grade) {
         console.log(`📧 Attempting to send email to: ${recipients.join(', ')}`);
 
         const info = await mailTransport.sendMail({
-            from: '"Yellow Card Tracker" <noreply@school.edu>',
+            from: `"Yellow Card Tracker" <${process.env.SMTP_USER || 'noreply@school.edu'}>`,
             to: recipients.join(', '),
             subject: 'Yellow Card Tracker Notice – Demerit Issued',
             text: `We would like to inform you that ${student.fullName} has gotten 3 yellow cards, which is equivalent to a demerit.`,

@@ -257,6 +257,8 @@ function App() {
           <p className="font-medium text-gray-900 mb-2">Main Developers</p>
           <p>Bat-Ochir Odmandakh</p>
           <p>Minjun Kim</p>
+          <p className="font-medium text-gray-900 mt-4 mb-2">Supporting Developer</p>
+          <p>Dennis Alimpolos</p>
         </footer>
       </div>
     </div>

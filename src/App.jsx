@@ -4,6 +4,7 @@ import GradeSelector from './components/GradeSelector'
 import StudentList from './components/StudentList'
 import AddStudent from './components/AddStudent'
 import Settings from './components/Settings'
+import WeeklyReport from './components/WeeklyReport'
 
 const API_URL = '/api';
 
@@ -14,6 +15,7 @@ function App() {
   const [students, setStudents] = useState([])
   const [error, setError] = useState(null)
   const [showSettings, setShowSettings] = useState(false)
+  const [showReport, setShowReport] = useState(false)
 
   useEffect(() => {
     const auth = localStorage.getItem('isAuthenticated')
@@ -176,6 +178,13 @@ function App() {
                 {showSettings ? 'Hide Settings' : 'Manage Emails'}
               </button>
             )}
+            <button
+              type="button"
+              onClick={() => setShowReport(true)}
+              className="w-full sm:w-auto inline-flex items-center justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500"
+            >
+              Weekly Tally
+            </button>
           </div>
         </div>
 
@@ -236,8 +245,10 @@ function App() {
           <Settings grade={grade} />
         )}
 
+        <WeeklyReport isOpen={showReport} onClose={() => setShowReport(false)} />
+
         <div className="mt-6 sm:mt-8">
-          <StudentList 
+          <StudentList  
             students={students} 
             onUpdate={updateStudent} 
             onReset={resetStudent} 
@@ -254,12 +265,12 @@ function App() {
         )}
 
         <footer className="mt-12 py-6 border-t border-gray-200 text-center text-sm text-gray-500">
-          <p className="font-medium text-gray-900 mb-2">Main Developers</p>
+          <p className="font-medium text-gray-900 mb-2">SPAS Student Council 2025-2026</p>
+          <p className="font-medium text-gray-900 mt-4 mb-2">Main Developers</p>
           <p>Bat-Ochir Odmandakh</p>
           <p>Minjun Kim</p>
           <p className="font-medium text-gray-900 mt-4 mb-2">Supporting Developer</p>
           <p>Dennis Alimpolos</p>
-          <p className="mt-4 font-medium text-gray-900">SPAS Student Council 2025-2026</p>
         </footer>
       </div>
     </div>

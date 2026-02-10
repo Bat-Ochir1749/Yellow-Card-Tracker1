@@ -269,6 +269,40 @@ router.get('/students/:id/logs', async (req, res) => {
     }
 });
 
+// Get Logs (with filtering)
+router.get('/logs', async (req, res) => {
+    try {
+        const { grade, start, end } = req.query;
+        const where = {};
+
+        if (grade) {
+            where.student = { grade: parseInt(grade) };
+        }
+        
+        if (start || end) {
+            where.createdAt = {};
+            if (start) where.createdAt.gte = new Date(start);
+            if (end) where.createdAt.lte = new Date(end);
+        }
+
+        const logs = await prisma.log.findMany({
+            where,
+            include: {
+                student: {
+                    select: {
+                        fullName: true,
+                        grade: true
+                    }
+                }
+            },
+            orderBy: { createdAt: 'desc' }
+        });
+        res.json(logs);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // Reset Student
 router.post('/students/:id/reset', async (req, res) => {
     const { id } = req.params;

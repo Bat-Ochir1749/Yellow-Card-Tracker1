@@ -52,114 +52,47 @@ function App() {
   }
 
   const addStudent = async (name) => {
-    if (isDemoMode) {
-        // Client-Side Logic
-        const newStudent = { 
-            id: Date.now(), // Temporary ID
-            fullName: name, 
-            grade: grade, 
-            yellowCards: 0, 
-            demerits: 0 
-        };
-        const updatedList = [...students, newStudent];
-        updatedList.sort((a, b) => a.fullName.localeCompare(b.fullName));
-        setStudents(updatedList);
-        localStorage.setItem(`students_grade_${grade}`, JSON.stringify(updatedList));
-    } else {
-        // Server-Side Logic
-        try {
-          const res = await fetch(`${API_URL}/students`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ fullName: name, grade })
-          })
-          const newStudent = await res.json()
-          setStudents([...students, newStudent].sort((a, b) => a.fullName.localeCompare(b.fullName)))
-        } catch (error) {
-          console.error('Error adding student:', error)
-        }
+    try {
+      const res = await fetch(`${API_URL}/students`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fullName: name, grade })
+      })
+      const newStudent = await res.json()
+      setStudents([...students, newStudent].sort((a, b) => a.fullName.localeCompare(b.fullName)))
+    } catch (error) {
+      console.error('Error adding student:', error)
     }
   }
 
   const updateStudent = async (id, action, reason = null, customReason = null) => {
-    if (isDemoMode) {
-        // Client-Side Logic for Demo Mode
-        let updatedList = students.map(student => {
-            if (student.id !== id) return student;
-
-            // Clone student to avoid direct mutation
-            let s = { ...student };
-            let emailTriggered = false;
-
-            if (action === 'add') {
-                s.yellowCards += 1;
-                if (s.yellowCards >= 3) {
-                    s.demerits += 1;
-                    s.yellowCards -= 3;
-                    emailTriggered = true; // Flag to send email
-                    
-                    if (s.demerits >= 3) {
-                        s.demerits = 0;
-                        s.yellowCards = 0;
-                    }
-                }
-            } else if (action === 'remove') {
-                if (s.yellowCards > 0) s.yellowCards -= 1;
-            }
-            
-            // Send email if needed (call special endpoint)
-            if (emailTriggered) {
-                fetch(`${API_URL}/send-notification`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ studentName: s.fullName, grade: s.grade })
-                }).then(res => res.json()).then(res => {
-                    if (!res.success) {
-                        alert(`Email failed: ${res.message}`);
-                    } else if (res.previewUrl) {
-                        window.open(res.previewUrl, '_blank');
-                    } else {
-                        console.log('Email sent successfully');
-                    }
-                });
-            }
-
-            return s;
-        });
-        
-        setStudents(updatedList);
-        localStorage.setItem(`students_grade_${grade}`, JSON.stringify(updatedList));
-
-    } else {
-        // Server-Side Logic (Original)
-        try {
-          const res = await fetch(`${API_URL}/students/${id}/yellow-card`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action, reason, customReason })
-          })
-          const updated = await res.json()
-          
-          // Handle email notification result
-          if (updated.emailResult) {
-            if (updated.emailResult.success) {
-               if (updated.emailResult.previewUrl) {
-                 console.log('Email Preview:', updated.emailResult.previewUrl);
-                 window.open(updated.emailResult.previewUrl, '_blank');
-               } else {
-                 console.log('Demerit issued! Email notification sent successfully.');
-               }
-            } else {
-               console.error('Email failed:', updated.emailResult.message);
-               alert(`Demerit issued, BUT email failed to send.\nReason: ${updated.emailResult.message}`);
-            }
-          }
-    
-          setStudents(students.map(s => s.id === id ? updated : s))
-        } catch (error) {
-          console.error('Error updating student:', error)
-          alert('Failed to update student');
+    try {
+      const res = await fetch(`${API_URL}/students/${id}/yellow-card`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, reason, customReason })
+      })
+      const updated = await res.json()
+      
+      // Handle email notification result
+      if (updated.emailResult) {
+        if (updated.emailResult.success) {
+           if (updated.emailResult.previewUrl) {
+             console.log('Email Preview:', updated.emailResult.previewUrl);
+             window.open(updated.emailResult.previewUrl, '_blank');
+           } else {
+             console.log('Demerit issued! Email notification sent successfully.');
+           }
+        } else {
+           console.error('Email failed:', updated.emailResult.message);
+           alert(`Demerit issued, BUT email failed to send.\nReason: ${updated.emailResult.message}`);
         }
+      }
+
+      setStudents(students.map(s => s.id === id ? updated : s))
+    } catch (error) {
+      console.error('Error updating student:', error)
+      alert('Failed to update student');
     }
   }
 
@@ -176,18 +109,12 @@ function App() {
   }
 
   const deleteStudent = async (id) => {
-    if (isDemoMode) {
-        const updatedList = students.filter(s => s.id !== id);
-        setStudents(updatedList);
-        localStorage.setItem(`students_grade_${grade}`, JSON.stringify(updatedList));
-    } else {
-        if (!window.confirm('Are you sure you want to delete this student?')) return
-        try {
-          await fetch(`${API_URL}/students/${id}`, { method: 'DELETE' })
-          setStudents(students.filter(s => s.id !== id))
-        } catch (error) {
-          console.error('Error deleting student:', error)
-        }
+    if (!window.confirm('Are you sure you want to delete this student?')) return
+    try {
+      await fetch(`${API_URL}/students/${id}`, { method: 'DELETE' })
+      setStudents(students.filter(s => s.id !== id))
+    } catch (error) {
+      console.error('Error deleting student:', error)
     }
   }
 
@@ -217,6 +144,29 @@ function App() {
               <GradeSelector selected={grade} onChange={setGrade} />
            </div>
         </div>
+
+        {isDemoMode && (
+          <div className="rounded-md bg-yellow-50 p-4 mt-4 mb-4">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-yellow-800">Demo Mode Active</h3>
+                <div className="mt-2 text-sm text-yellow-700">
+                  <p>
+                    The application is running in Mock Mode (No Database). Data will not persist across restarts and will NOT sync across devices.
+                    To enable sync and permanent storage, please connect a PostgreSQL database.
+                    <br/>
+                    <strong>Note:</strong> Default emails have been pre-loaded for testing.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {error && (
           <div className="rounded-md bg-red-50 p-4 mt-4">

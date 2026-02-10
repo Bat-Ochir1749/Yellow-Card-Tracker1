@@ -15,6 +15,24 @@ let prisma;
 if (hasDb) {
     prisma = new PrismaClient();
     console.log("✅ Using Real Database (PostgreSQL)");
+    
+    // Seed default emails if missing (Requested by User)
+    (async () => {
+        try {
+            const DEFAULT_EMAILS = JSON.stringify(['josi@stpaulclark.com', 'alyannac@stpaulclark.com']);
+            for (let g = 1; g <= 12; g++) {
+                const exists = await prisma.gradeSettings.findUnique({ where: { grade: g } });
+                if (!exists) {
+                    await prisma.gradeSettings.create({
+                        data: { grade: g, emails: DEFAULT_EMAILS }
+                    });
+                    console.log(`Initialized default emails for Grade ${g}`);
+                }
+            }
+        } catch (err) {
+            console.error("Failed to seed default emails:", err);
+        }
+    })();
 } else {
     console.error("⚠️ DATABASE_URL is missing. Using In-Memory Mock Database. DATA WILL BE LOST ON RESTART.");
     prisma = mockDb;

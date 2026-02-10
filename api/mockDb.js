@@ -14,6 +14,18 @@ store.students = [
   { id: store.getId(), fullName: 'Demo Student 2', grade: 7, yellowCards: 1, demerits: 0, createdAt: new Date(), updatedAt: new Date() }
 ];
 
+// Initial Email Settings (Requested by User)
+const DEFAULT_EMAILS = JSON.stringify(['josi@stpaulclark.com', 'alyannac@stpaulclark.com']);
+for (let g = 1; g <= 12; g++) {
+    store.settings.push({
+        id: store.getId(),
+        grade: g,
+        emails: DEFAULT_EMAILS,
+        createdAt: new Date(),
+        updatedAt: new Date()
+    });
+}
+
 export const mockDb = {
   student: {
     findMany: async (args) => {
@@ -99,45 +111,31 @@ export const mockDb = {
       return result;
     },
     deleteMany: async (args) => {
-      if (args?.where?.studentId) {
-        const initialLen = store.logs.length;
         store.logs = store.logs.filter(l => l.studentId !== args.where.studentId);
-        return { count: initialLen - store.logs.length };
-      }
-      return { count: 0 };
+        return { count: 0 }; // simplified
     }
   },
   gradeSettings: {
-    findUnique: async (args) => {
-      return store.settings.find(s => s.grade === args.where.grade) || null;
-    },
-    create: async (args) => {
-        const newSetting = { ...args.data };
-        store.settings.push(newSetting);
-        return newSetting;
-    },
-    update: async (args) => {
-        const index = store.settings.findIndex(s => s.grade === args.where.grade);
-        if (index !== -1) {
-            const updated = { ...store.settings[index], ...args.data };
-            store.settings[index] = updated;
-            return updated;
-        }
-        throw new Error("Settings not found");
-    },
-    upsert: async (args) => {
-      const index = store.settings.findIndex(s => s.grade === args.where.grade);
-      if (index !== -1) {
-        // Update
-        const updated = { ...store.settings[index], ...args.update };
-        store.settings[index] = updated;
-        return updated;
-      } else {
-        // Create
-        const newSetting = { ...args.create };
-        store.settings.push(newSetting);
-        return newSetting;
+      findUnique: async (args) => {
+          return store.settings.find(s => s.grade === args.where.grade) || null;
+      },
+      create: async (args) => {
+          const newSetting = {
+              id: store.getId(),
+              ...args.data,
+              createdAt: new Date(),
+              updatedAt: new Date()
+          };
+          store.settings.push(newSetting);
+          return newSetting;
+      },
+      update: async (args) => {
+          const index = store.settings.findIndex(s => s.grade === args.where.grade);
+          if (index !== -1) {
+              store.settings[index] = { ...store.settings[index], ...args.data, updatedAt: new Date() };
+              return store.settings[index];
+          }
+          throw new Error("Settings not found");
       }
-    }
   }
 };

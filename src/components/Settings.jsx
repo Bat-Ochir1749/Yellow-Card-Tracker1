@@ -14,9 +14,15 @@ export default function Settings({ grade }) {
     try {
       const res = await fetch(`${API_URL}/settings/${grade}`);
       const data = await res.json();
-      setEmails(data);
+      if (Array.isArray(data)) {
+        setEmails(data);
+      } else {
+        console.error('Failed to fetch emails:', data);
+        setEmails([]);
+      }
     } catch (error) {
       console.error('Failed to fetch emails', error);
+      setEmails([]);
     }
   };
 
@@ -32,8 +38,16 @@ export default function Settings({ grade }) {
         body: JSON.stringify({ email: newEmail })
       });
       const data = await res.json();
-      setEmails(data);
-      setNewEmail('');
+      if (Array.isArray(data)) {
+        setEmails(data);
+        setNewEmail('');
+      } else {
+        console.error('Error adding email:', data);
+        alert('Failed to add email: ' + (data.error || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Failed to add email', error);
+      alert('Failed to add email');
     } finally {
       setLoading(false);
     }
@@ -48,7 +62,12 @@ export default function Settings({ grade }) {
         body: JSON.stringify({ email })
       });
       const data = await res.json();
-      setEmails(data);
+      if (Array.isArray(data)) {
+        setEmails(data);
+      } else {
+        console.error('Error removing email:', data);
+        alert('Failed to remove email: ' + (data.error || 'Unknown error'));
+      }
     } catch (error) {
       console.error('Failed to remove email', error);
     }

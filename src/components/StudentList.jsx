@@ -149,9 +149,15 @@ export default function StudentList({ students, onUpdate, onReset, onDelete }) {
       try {
           const res = await fetch(`/api/students/${student.id}/logs`);
           const data = await res.json();
-          setStudentLogs(data);
+          if (Array.isArray(data)) {
+            setStudentLogs(data);
+          } else {
+            console.error("Invalid logs data:", data);
+            setStudentLogs([]);
+          }
       } catch (error) {
           console.error("Failed to fetch logs", error);
+          setStudentLogs([]);
       }
   };
 

@@ -10,8 +10,8 @@ const store = {
 
 // Initial dummy data
 store.students = [
-  { id: store.getId(), fullName: 'Demo Student 1', grade: 6, yellowCards: 0, demerits: 0, createdAt: new Date(), updatedAt: new Date() },
-  { id: store.getId(), fullName: 'Demo Student 2', grade: 7, yellowCards: 1, demerits: 0, createdAt: new Date(), updatedAt: new Date() }
+  { id: store.getId(), fullName: 'Demo Student 1', email: 'demo1@example.com', grade: 6, yellowCards: 0, demerits: 0, createdAt: new Date(), updatedAt: new Date() },
+  { id: store.getId(), fullName: 'Demo Student 2', email: 'demo2@example.com', grade: 7, yellowCards: 1, demerits: 0, createdAt: new Date(), updatedAt: new Date() }
 ];
 
 // Initial Email Settings (Requested by User)

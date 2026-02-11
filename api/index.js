@@ -175,15 +175,86 @@ router.get('/students', async (req, res) => {
 
 // Add Student
 router.post('/students', async (req, res) => {
-    const { fullName, grade } = req.body;
+    const { fullName, grade, email } = req.body;
     if (!fullName || !grade) return res.status(400).json({ error: 'Name and Grade required' });
 
     try {
         const student = await prisma.student.create({
-            data: { fullName, grade: parseInt(grade) }
+            data: { fullName, grade: parseInt(grade), email }
         });
         res.json(student);
     } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Update Student
+router.put('/students/:id', async (req, res) => {
+    const { id } = req.params;
+    const { fullName, email } = req.body;
+
+    try {
+        const student = await prisma.student.update({
+            where: { id: parseInt(id) },
+            data: { fullName, email }
+        });
+        res.json(student);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Notify Student (Weekly Report)
+router.post('/students/:id/notify', async (req, res) => {
+    const { id } = req.params;
+    const { count, reasons } = req.body; // Expecting calculated count and reasons from frontend
+
+    try {
+        const student = await prisma.student.findUnique({ where: { id: parseInt(id) } });
+        if (!student) return res.status(404).json({ error: 'Student not found' });
+        
+        if (!student.email) return res.status(400).json({ error: 'Student has no email linked' });
+
+        const mailTransport = await getTransporter();
+        if (!mailTransport) return res.status(500).json({ error: "Email system not initialized" });
+
+        const sender = process.env.SMTP_USER || 'yellowcardnotice@gmail.com';
+        const subject = 'Yellow Card Notice';
+        
+        // Format reasons
+        const reasonsList = reasons && reasons.length > 0 
+            ? reasons.map(r => `- ${r}`).join('\n')
+            : 'No specific details provided.';
+
+        const textBody = `Hello ${student.fullName} from the ${student.grade}th grade,\n\n` +
+                         `You have received ${count} yellow card(s).\n\n` +
+                         `Here is why:\n${reasonsList}`;
+
+        const htmlBody = `<p>Hello <strong>${student.fullName}</strong> from the <strong>${student.grade}th</strong> grade,</p>` +
+                         `<p>You have received <strong>${count}</strong> yellow card(s).</p>` +
+                         `<p>Here is why:</p>` +
+                         `<ul>${(reasons || []).map(r => `<li>${r}</li>`).join('')}</ul>`;
+
+        const info = await mailTransport.sendMail({
+            from: `"Yellow Card Tracker" <${sender}>`,
+            to: student.email,
+            subject: subject,
+            text: textBody,
+            html: htmlBody
+        });
+
+        console.log("✅ Notification sent: %s", info.messageId);
+        
+        let previewUrl = null;
+        if (nodemailer.getTestMessageUrl(info)) {
+            previewUrl = nodemailer.getTestMessageUrl(info);
+            console.log("🔗 Preview URL: %s", previewUrl);
+        }
+
+        res.json({ success: true, message: "Email sent successfully", previewUrl });
+
+    } catch (error) {
+        console.error("❌ Error sending notification:", error);
         res.status(500).json({ error: error.message });
     }
 });

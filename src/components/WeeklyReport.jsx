@@ -46,6 +46,7 @@ export default function WeeklyReport({ isOpen, onClose }) {
             sortedLogs.forEach(log => {
                 if (!tally[log.studentId]) {
                     tally[log.studentId] = {
+                        id: log.studentId,
                         name: log.student.fullName,
                         grade: log.student.grade,
                         count: 0,
@@ -77,6 +78,28 @@ export default function WeeklyReport({ isOpen, onClose }) {
             console.error("Error fetching report:", error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleSendEmail = async (studentId, count, reasons) => {
+        if (!confirm('Send weekly notice email to this student?')) return;
+        
+        try {
+            const res = await fetch(`/api/students/${studentId}/notify`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ count, reasons })
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert('Email sent successfully!');
+                if (data.previewUrl) window.open(data.previewUrl, '_blank');
+            } else {
+                alert('Failed to send email: ' + (data.message || data.error));
+            }
+        } catch (error) {
+            console.error("Error sending email:", error);
+            alert('Error sending email');
         }
     };
 
@@ -129,12 +152,13 @@ export default function WeeklyReport({ isOpen, onClose }) {
                                             <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Grade</th>
                                             <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Cards Issued</th>
                                             <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Details</th>
+                                            <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Action</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-200 bg-white">
                                         {reportData.length === 0 ? (
                                             <tr>
-                                                <td colSpan="4" className="py-4 text-center text-sm text-gray-500">
+                                                <td colSpan="5" className="py-4 text-center text-sm text-gray-500">
                                                     No yellow cards issued this week.
                                                 </td>
                                             </tr>
@@ -146,6 +170,14 @@ export default function WeeklyReport({ isOpen, onClose }) {
                                                     <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 font-bold">{item.count}</td>
                                                     <td className="px-3 py-4 text-sm text-gray-500 max-w-xs truncate">
                                                         {item.reasons.join(', ')}
+                                                    </td>
+                                                    <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                                                        <button
+                                                            onClick={() => handleSendEmail(item.id, item.count, item.reasons)}
+                                                            className="text-indigo-600 hover:text-indigo-900 font-medium"
+                                                        >
+                                                            Send Email
+                                                        </button>
                                                     </td>
                                                 </tr>
                                             ))

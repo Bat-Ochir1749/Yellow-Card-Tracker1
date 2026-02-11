@@ -81,17 +81,31 @@ function App() {
     }
   }
 
-  const addStudent = async (name) => {
+  const addStudent = async (name, email) => {
     try {
       const res = await fetch(`${API_URL}/students`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fullName: name, grade })
+        body: JSON.stringify({ fullName: name, grade, email })
       })
       const newStudent = await res.json()
       setStudents([...students, newStudent].sort((a, b) => a.fullName.localeCompare(b.fullName)))
     } catch (error) {
       console.error('Error adding student:', error)
+    }
+  }
+
+  const editStudent = async (id, name, email) => {
+    try {
+        const res = await fetch(`${API_URL}/students/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fullName: name, email })
+        });
+        const updated = await res.json();
+        setStudents(students.map(s => s.id === id ? updated : s));
+    } catch (error) {
+        console.error('Error editing student:', error);
     }
   }
 
@@ -252,6 +266,7 @@ function App() {
           <StudentList  
             students={students} 
             onUpdate={updateStudent} 
+            onEdit={editStudent}
             onReset={resetStudent} 
             onDelete={deleteStudent}
             isViewOnly={isViewOnly}

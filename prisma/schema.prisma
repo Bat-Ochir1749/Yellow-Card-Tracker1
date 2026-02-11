@@ -13,6 +13,7 @@ datasource db {
 model Student {
   id          Int      @id @default(autoincrement())
   fullName    String
+  email       String?
   grade       Int
   yellowCards Int      @default(0)
   demerits    Int      @default(0)

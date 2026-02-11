@@ -1,4 +1,57 @@
-import { useState, Fragment } from 'react';
+import { useState, useEffect, Fragment } from 'react';
+
+function EditModal({ isOpen, onClose, student, onSave }) {
+    const [name, setName] = useState('');
+    const [email, setEmail] = useState('');
+
+    useEffect(() => {
+        if (student) {
+            setName(student.fullName);
+            setEmail(student.email || '');
+        }
+    }, [student]);
+
+    if (!isOpen) return null;
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        onSave(student.id, name, email);
+        onClose();
+    };
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto overflow-x-hidden bg-gray-500 bg-opacity-75 p-4 sm:p-0">
+            <div className="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
+                <h3 className="text-base font-semibold leading-6 text-gray-900 mb-4">Edit Student Details</h3>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium leading-6 text-gray-900">Name</label>
+                        <input 
+                            type="text" 
+                            value={name} 
+                            onChange={e => setName(e.target.value)} 
+                            className="mt-1 block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-indigo-600 sm:text-sm sm:leading-6" 
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium leading-6 text-gray-900">Email</label>
+                        <input 
+                            type="email" 
+                            value={email} 
+                            onChange={e => setEmail(e.target.value)} 
+                            className="mt-1 block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-indigo-600 sm:text-sm sm:leading-6" 
+                            placeholder="student@example.com" 
+                        />
+                    </div>
+                    <div className="mt-5 sm:mt-6 sm:flex sm:flex-row-reverse gap-2">
+                        <button type="submit" className="inline-flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 sm:w-auto">Save</button>
+                        <button type="button" onClick={onClose} className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+}
 
 function YCModal({ isOpen, onClose, onConfirm, studentName }) {
     const [reason, setReason] = useState('Uniform');
@@ -125,10 +178,11 @@ function HistoryModal({ isOpen, onClose, studentName, logs }) {
     );
 }
 
-export default function StudentList({ students, onUpdate, onReset, onDelete, isViewOnly }) {
+export default function StudentList({ students, onUpdate, onEdit, onReset, onDelete, isViewOnly }) {
   const [loading, setLoading] = useState(null);
   const [ycModalOpen, setYcModalOpen] = useState(false);
   const [historyModalOpen, setHistoryModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [studentLogs, setStudentLogs] = useState([]);
 
@@ -139,6 +193,16 @@ export default function StudentList({ students, onUpdate, onReset, onDelete, isV
 
   const closeYCModal = () => {
       setYcModalOpen(false);
+      setSelectedStudent(null);
+  };
+
+  const openEditModal = (student) => {
+      setSelectedStudent(student);
+      setEditModalOpen(true);
+  };
+
+  const closeEditModal = () => {
+      setEditModalOpen(false);
       setSelectedStudent(null);
   };
 
@@ -229,6 +293,13 @@ export default function StudentList({ students, onUpdate, onReset, onDelete, isV
         logs={studentLogs}
       />
 
+      <EditModal
+        isOpen={editModalOpen}
+        onClose={closeEditModal}
+        student={selectedStudent}
+        onSave={onEdit}
+      />
+
       {/* Mobile Card View */}
       <div className="block sm:hidden space-y-4">
         {students.map((student) => (
@@ -251,7 +322,7 @@ export default function StudentList({ students, onUpdate, onReset, onDelete, isV
               </div>
             </div>
 
-            <div className="flex justify-end gap-3 pt-3 border-t border-gray-100 items-center">
+            <div className="flex justify-end gap-3 pt-3 border-t border-gray-100 items-center flex-wrap">
                 <button
                   onClick={() => openHistoryModal(student)}
                   className="text-sm font-medium text-blue-600 hover:text-blue-900"
@@ -260,6 +331,12 @@ export default function StudentList({ students, onUpdate, onReset, onDelete, isV
                 </button>
                {!isViewOnly && (
                  <>
+                   <button
+                      onClick={() => openEditModal(student)}
+                      className="text-sm font-medium text-indigo-600 hover:text-indigo-900"
+                   >
+                      Edit
+                   </button>
                    <button
                       onClick={() => handleDelete(student.id)}
                       disabled={loading === student.id}
@@ -344,6 +421,13 @@ export default function StudentList({ students, onUpdate, onReset, onDelete, isV
                         className="text-gray-600 hover:text-gray-900 disabled:opacity-50"
                       >
                         -1 YC
+                      </button>
+                      <span className="text-gray-300">|</span>
+                      <button
+                        onClick={() => openEditModal(student)}
+                        className="text-indigo-600 hover:text-indigo-900"
+                      >
+                        Edit
                       </button>
                       <span className="text-gray-300">|</span>
                       <button

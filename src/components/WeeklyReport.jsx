@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-export default function WeeklyReport({ isOpen, onClose }) {
+export default function WeeklyReport({ isOpen, onClose, isViewOnly }) {
     const [weekOffset, setWeekOffset] = useState(0);
     const [reportData, setReportData] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -152,13 +152,15 @@ export default function WeeklyReport({ isOpen, onClose }) {
                                             <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Grade</th>
                                             <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Cards Issued</th>
                                             <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Details</th>
-                                            <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Action</th>
+                                            {!isViewOnly && (
+                                                <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Action</th>
+                                            )}
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-200 bg-white">
                                         {reportData.length === 0 ? (
                                             <tr>
-                                                <td colSpan="5" className="py-4 text-center text-sm text-gray-500">
+                                                <td colSpan={isViewOnly ? "4" : "5"} className="py-4 text-center text-sm text-gray-500">
                                                     No yellow cards issued this week.
                                                 </td>
                                             </tr>
@@ -171,14 +173,16 @@ export default function WeeklyReport({ isOpen, onClose }) {
                                                     <td className="px-3 py-4 text-sm text-gray-500 max-w-xs truncate">
                                                         {item.reasons.join(', ')}
                                                     </td>
-                                                    <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                                                        <button
-                                                            onClick={() => handleSendEmail(item.id, item.count, item.reasons)}
-                                                            className="text-indigo-600 hover:text-indigo-900 font-medium"
-                                                        >
-                                                            Send Email
-                                                        </button>
-                                                    </td>
+                                                    {!isViewOnly && (
+                                                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                                                            <button
+                                                                onClick={() => handleSendEmail(item.id, item.count, item.reasons)}
+                                                                className="text-indigo-600 hover:text-indigo-900 font-medium"
+                                                            >
+                                                                Send Email
+                                                            </button>
+                                                        </td>
+                                                    )}
                                                 </tr>
                                             ))
                                         )}

@@ -260,7 +260,7 @@ function App() {
           <Settings grade={grade} />
         )}
 
-        <WeeklyReport isOpen={showReport} onClose={() => setShowReport(false)} />
+        <WeeklyReport isOpen={showReport} onClose={() => setShowReport(false)} isViewOnly={isViewOnly} />
 
         <div className="mt-6 sm:mt-8">
           <StudentList  

@@ -15,7 +15,12 @@ store.students = [
 ];
 
 // Initial Email Settings (Requested by User)
-const DEFAULT_EMAILS = JSON.stringify(['josi@stpaulclark.com', 'alyannac@stpaulclark.com']);
+const DEFAULT_EMAILS = JSON.stringify([
+    'josi@stpaulclark.com', 
+    'alyannac@stpaulclark.com',
+    'smith.nj@stpaulclark.com',
+    'mariedelle@stpaulclark.com'
+]);
 for (let g = 1; g <= 12; g++) {
     store.settings.push({
         id: store.getId(),

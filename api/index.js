@@ -22,7 +22,12 @@ if (hasDb) {
             // Wait a moment for connection
             await new Promise(r => setTimeout(r, 1000));
             
-            const DEFAULT_EMAILS = JSON.stringify(['josi@stpaulclark.com', 'alyannac@stpaulclark.com']);
+            const DEFAULT_EMAILS = JSON.stringify([
+                'josi@stpaulclark.com', 
+                'alyannac@stpaulclark.com',
+                'smith.nj@stpaulclark.com',
+                'mariedelle@stpaulclark.com'
+            ]);
             for (let g = 1; g <= 12; g++) {
                 // Use explicit try-catch inside loop to prevent one failure from stopping all
                 try {
@@ -154,6 +159,51 @@ async function sendDemeritEmail(student, grade) {
     }
 }
 
+// Helper to send Phone Violation Email
+async function sendPhoneViolationEmail(student) {
+    const mailTransport = await getTransporter();
+    
+    if (!mailTransport) {
+        return { success: false, message: "Email system not initialized" };
+    }
+
+    try {
+        // Specific recipients for Phone violation
+        const recipients = ['smith.nj@stpaulclark.com', 'josi@stpaulclark.com'];
+        
+        console.log(`📧 Attempting to send PHONE VIOLATION email to: ${recipients.join(', ')}`);
+        
+        const sender = process.env.SMTP_USER || 'yellowcardnotice@gmail.com';
+        const subject = 'Phone Violation Notice';
+        
+        const textBody = `We would like to inform you that ${student.fullName} was found using their phone during school hours today. As per school policy, mobile phones are not allowed during school hours.`;
+        
+        const htmlBody = `<p>We would like to inform you that <strong>${student.fullName}</strong> was found using their phone during school hours today. As per school policy, mobile phones are not allowed during school hours.</p>`;
+
+        const info = await mailTransport.sendMail({
+            from: `"Yellow Card Tracker" <${sender}>`,
+            to: recipients.join(', '),
+            subject: subject,
+            text: textBody,
+            html: htmlBody
+        });
+
+        console.log("✅ Phone Violation Email sent: %s", info.messageId);
+        
+        let previewUrl = null;
+        if (nodemailer.getTestMessageUrl(info)) {
+            previewUrl = nodemailer.getTestMessageUrl(info);
+            console.log("🔗 Preview URL: %s", previewUrl);
+        }
+
+        return { success: true, message: "Phone violation email sent", previewUrl };
+
+    } catch (error) {
+        console.error("❌ Error sending phone violation email:", error);
+        return { success: false, message: error.message };
+    }
+}
+
 // Router to handle /api prefix
 const router = express.Router();
 
@@ -279,6 +329,23 @@ router.post('/students/:id/yellow-card', async (req, res) => {
             
             const reasonText = customReason ? `${reason}: ${customReason}` : reason || 'Unknown';
             logMessage = `+1 YC (${reasonText})`;
+
+            // Check if reason is Phone -> Send immediate email
+            if (reason === 'Phone') {
+                const phoneEmailResult = await sendPhoneViolationEmail(student);
+                if (phoneEmailResult.success) {
+                    if (!emailResult) emailResult = {}; 
+                    // We might overwrite if demerit also triggers, but that's fine, we just want to know if *an* email was sent
+                    // Ideally we should return multiple results or merge them.
+                    // For now, let's just log it and potentially return the previewUrl if it's the only one.
+                    console.log('Phone violation email sent.');
+                    if (phoneEmailResult.previewUrl) {
+                         // If we have a preview URL, prioritize showing it or add it to a list
+                         if (!emailResult.previewUrl) emailResult.previewUrl = phoneEmailResult.previewUrl;
+                    }
+                    emailResult.success = true;
+                }
+            }
 
             // Check rule: 3 Yellow Cards = 1 Demerit
             if (yellowCards >= 3) {

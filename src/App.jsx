@@ -60,13 +60,23 @@ function App() {
       const isMock = res.headers.get('X-Data-Source') === 'Memory-Mock';
       setIsDemoMode(isMock);
 
+      if (!res.ok) {
+        throw new Error(`Server returned ${res.status}: ${res.statusText}`);
+      }
+
+      const data = await res.json()
+      
+      if (!Array.isArray(data)) {
+        console.error("API returned invalid data format:", data);
+        throw new Error("Invalid data format received from API");
+      }
+
       if (isMock && savedData) {
          // If we are in demo mode and have saved data, use the saved data
          console.log('Using LocalStorage data for Demo Mode persistence');
          setStudents(JSON.parse(savedData));
       } else {
          // Otherwise use API data (Real DB or first-time Mock)
-         const data = await res.json()
          setStudents(data)
          // Save to local just in case we switch to demo mode later
          if (isMock) {

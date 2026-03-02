@@ -22,12 +22,14 @@ if (hasDb) {
             // Wait a moment for connection
             await new Promise(r => setTimeout(r, 1000));
             
-            const DEFAULT_EMAILS = JSON.stringify([
+            const DEFAULT_EMAILS_LIST = [
                 'josi@stpaulclark.com', 
                 'alyannac@stpaulclark.com',
                 'smith.nj@stpaulclark.com',
                 'mariedelle@stpaulclark.com'
-            ]);
+            ];
+            const DEFAULT_EMAILS = JSON.stringify(DEFAULT_EMAILS_LIST);
+
             for (let g = 1; g <= 12; g++) {
                 // Use explicit try-catch inside loop to prevent one failure from stopping all
                 try {
@@ -37,6 +39,30 @@ if (hasDb) {
                             data: { grade: g, emails: DEFAULT_EMAILS }
                         });
                         console.log(`Initialized default emails for Grade ${g}`);
+                    } else {
+                        // Merge new defaults into existing
+                        let currentEmails = [];
+                        try {
+                            currentEmails = JSON.parse(exists.emails);
+                        } catch (e) {
+                            currentEmails = [];
+                        }
+                        
+                        let updated = false;
+                        for (const email of DEFAULT_EMAILS_LIST) {
+                            if (!currentEmails.includes(email)) {
+                                currentEmails.push(email);
+                                updated = true;
+                            }
+                        }
+                        
+                        if (updated) {
+                            await prisma.gradeSettings.update({
+                                where: { grade: g },
+                                data: { emails: JSON.stringify(currentEmails) }
+                            });
+                            console.log(`Updated default emails for Grade ${g}`);
+                        }
                     }
                 } catch (e) {
                     // Ignore table not found errors during initial migration phase

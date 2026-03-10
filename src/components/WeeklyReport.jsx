@@ -107,9 +107,9 @@ export default function WeeklyReport({ isOpen, onClose, isViewOnly }) {
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto overflow-x-hidden bg-gray-500 bg-opacity-75 p-4 sm:p-0">
-            <div className="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-2xl sm:p-6 w-full max-h-[90vh] flex flex-col">
+            <div className="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-2xl sm:p-6 w-full">
                 <div className="sm:flex sm:items-start">
-                    <div className="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left w-full flex flex-col min-h-0">
+                    <div className="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left w-full">
                         <div className="flex justify-between items-center mb-4">
                             <h3 className="text-lg font-semibold leading-6 text-gray-900">
                                 Weekly Tally Report
@@ -144,7 +144,7 @@ export default function WeeklyReport({ isOpen, onClose, isViewOnly }) {
                         {loading ? (
                             <div className="text-center py-8">Loading...</div>
                         ) : (
-                            <div className="flex-1 min-h-0 overflow-auto">
+                            <div className="max-h-[55vh] sm:max-h-[60vh] overflow-auto">
                                 <table className="min-w-full divide-y divide-gray-300">
                                     <thead className="bg-gray-50 sticky top-0 z-10">
                                         <tr>

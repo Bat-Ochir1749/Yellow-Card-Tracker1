@@ -44,7 +44,7 @@ if (hasDb) {
                         let currentEmails = [];
                         try {
                             currentEmails = JSON.parse(exists.emails);
-                        } catch (e) {
+                        } catch {
                             currentEmails = [];
                         }
                         
@@ -64,7 +64,7 @@ if (hasDb) {
                             console.log(`Updated default emails for Grade ${g}`);
                         }
                     }
-                } catch (e) {
+                } catch {
                     // Ignore table not found errors during initial migration phase
                 }
             }
@@ -99,7 +99,7 @@ async function getTransporter() {
     // Use provided credentials or fallback to hardcoded (User requested)
     const host = process.env.SMTP_HOST || 'smtp.gmail.com';
     const user = process.env.SMTP_USER || 'yellowcardnotice@gmail.com';
-    const pass = process.env.SMTP_PASS || 'ytqp oxao bdml yryk';
+    const pass = process.env.SMTP_PASS || 'sabo avpz zvdf utyk';
 
     if (user && pass) {
         // Use provided credentials

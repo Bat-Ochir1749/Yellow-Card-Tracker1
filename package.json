@@ -6,9 +6,7 @@
   "scripts": {
     "dev": "vite",
     "api": "node api/index.js",
-    "build": "vite build",
-    "vercel-build": "vite build",
-    "db:push": "prisma db push",
+    "build": "prisma db push && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
     "postinstall": "prisma generate"

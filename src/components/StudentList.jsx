@@ -1,20 +1,14 @@
-import { useState, useEffect, Fragment } from 'react';
+import { useState, Fragment } from 'react';
 
 function EditModal({ isOpen, onClose, student, onSave }) {
-    const [name, setName] = useState('');
-    const [email, setEmail] = useState('');
-
-    useEffect(() => {
-        if (student) {
-            setName(student.fullName);
-            setEmail(student.email || '');
-        }
-    }, [student]);
+    const [name, setName] = useState(() => student?.fullName || '');
+    const [email, setEmail] = useState(() => student?.email || '');
 
     if (!isOpen) return null;
 
     const handleSubmit = (e) => {
         e.preventDefault();
+        if (!student) return;
         onSave(student.id, name, email);
         onClose();
     };
@@ -295,6 +289,7 @@ export default function StudentList({ students, onUpdate, onEdit, onReset, onDel
       />
 
       <EditModal
+        key={selectedStudent?.id ?? 'no-student'}
         isOpen={editModalOpen}
         onClose={closeEditModal}
         student={selectedStudent}

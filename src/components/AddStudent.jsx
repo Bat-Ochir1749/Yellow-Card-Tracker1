@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-export default function AddStudent({ grade, onAdd }) {
+export default function AddStudent({ onAdd }) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
